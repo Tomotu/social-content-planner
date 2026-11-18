@@ -159,6 +159,25 @@
     font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s ease;
   }
   #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Edit dialog */
+  #edit-dialog {
+    border: 1px solid var(--line); border-radius: 12px; padding: 20px;
+    width: min(480px, 90vw); box-shadow: 0 8px 24px rgba(16,24,40,0.12);
+  }
+  #edit-dialog::backdrop { background: rgba(31,36,48,0.35); }
+  #edit-form { display: flex; flex-direction: column; gap: 10px; }
+  #edit-form h3 { margin: 0 0 4px; font-size: 16px; }
+  #edit-form input, #edit-form select {
+    padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 14px; background: #fff; color: var(--ink);
+  }
+  .edit-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+  .edit-actions button {
+    padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  #edit-cancel { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+  #edit-save { background: var(--accent); border: none; color: #fff; }
 </style>
 </head>
 <body>
@@ -247,6 +266,40 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- Edit post dialog -->
+<dialog id="edit-dialog">
+  <form id="edit-form">
+    <h3>Edit post</h3>
+    <div class="day-picker">
+      <span class="day-picker-label">Day</span>
+      <button type="button" class="day-pill edit-day" data-day="Mon">Mon</button>
+      <button type="button" class="day-pill edit-day" data-day="Tue">Tue</button>
+      <button type="button" class="day-pill edit-day" data-day="Wed">Wed</button>
+      <button type="button" class="day-pill edit-day" data-day="Thu">Thu</button>
+      <button type="button" class="day-pill edit-day" data-day="Fri">Fri</button>
+      <button type="button" class="day-pill edit-day" data-day="Sat">Sat</button>
+      <button type="button" class="day-pill edit-day" data-day="Sun">Sun</button>
+    </div>
+    <select name="platform">
+      <option>YouTube Shorts</option>
+      <option>TikTok</option>
+      <option>Instagram</option>
+      <option>YouTube long-form</option>
+    </select>
+    <input name="title" placeholder="Review or video idea" required>
+    <input type="time" name="deadline" title="Delivery deadline (optional)">
+    <select name="status">
+      <option value="draft">Draft</option>
+      <option value="ready">Ready</option>
+      <option value="needswork">Needs work</option>
+    </select>
+    <div class="edit-actions">
+      <button type="button" id="edit-cancel">Cancel</button>
+      <button type="submit" id="edit-save">Save changes</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
   // ---- Sample data (tech creator, fictional) ----
@@ -365,6 +418,28 @@
     }
   });
 
+  // ---- Edit post dialog ----
+  const editDialog = document.getElementById("edit-dialog");
+  const editForm = document.getElementById("edit-form");
+  let editingId = null;
+
+  document.querySelectorAll(".day-pill.edit-day").forEach(pill => {
+    pill.addEventListener("click", () => {
+      document.querySelectorAll(".day-pill.edit-day").forEach(p => p.classList.remove("selected"));
+      pill.classList.add("selected");
+    });
+  });
+
+  // "5:00 PM" -> "17:00" for the time input
+  function deadlineToInputValue(display) {
+    if (!display) return "";
+    const m = display.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!m) return "";
+    let h = +m[1] % 12;
+    if (m[3].toUpperCase() === "PM") h += 12;
+    return String(h).padStart(2, "0") + ":" + m[2];
+  }
+
   document.getElementById("posts").addEventListener("click", e => {
     const id = +e.target.dataset.id;
     if (e.target.classList.contains("del-btn")) {
@@ -375,14 +450,34 @@
     if (e.target.classList.contains("edit-btn")) {
       const post = posts.find(p => p.id === id);
       if (!post) return;
-      const newTitle = prompt("Edit post title:", post.title);
-      if (newTitle && newTitle.trim()) {
-        post.title = newTitle.trim();
-        renderPosts(); renderChecklist();
-        toast("Post updated");
-      }
+      editingId = id;
+      editForm.platform.value = post.platform;
+      editForm.title.value = post.title;
+      editForm.status.value = post.status;
+      editForm.deadline.value = deadlineToInputValue(post.deadline);
+      document.querySelectorAll(".day-pill.edit-day").forEach(p =>
+        p.classList.toggle("selected", p.dataset.day === post.day));
+      editDialog.showModal();
     }
   });
+
+  editForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const post = posts.find(p => p.id === editingId);
+    if (post) {
+      const selectedDay = editForm.querySelector(".day-pill.selected");
+      post.day = selectedDay ? selectedDay.dataset.day : post.day;
+      post.platform = editForm.platform.value;
+      post.title = editForm.title.value.trim();
+      post.status = editForm.status.value;
+      post.deadline = formatDeadline(editForm.deadline.value);
+      renderPosts(); renderChecklist();
+      toast("Post updated");
+    }
+    editDialog.close();
+  });
+
+  document.getElementById("edit-cancel").addEventListener("click", () => editDialog.close());
 
   // ---- Brand library ----
   function renderLibrary() {
