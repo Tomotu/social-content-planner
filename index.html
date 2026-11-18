@@ -113,12 +113,32 @@
   }
   .reuse-box { margin-top: 16px; }
   .reuse-box h3 { margin: 0 0 8px; font-size: 14px; font-weight: 700; }
+  .reuse-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .reuse-head h3 { margin: 0; }
+  .reuse-head-actions { display: flex; gap: 8px; }
+  .reuse-head-actions button {
+    font-size: 13px; padding: 5px 14px; border-radius: 8px; cursor: pointer;
+    background: var(--accent-soft); color: var(--accent); border: none; font-weight: 600;
+  }
+  .reuse-head-actions button:hover { background: #d5e5e0; }
   .reuse-box textarea, .reuse-box input {
     width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
     font-size: 14px; font-family: inherit; color: var(--ink); resize: vertical;
   }
   .reuse-box textarea { min-height: 90px; }
   .reuse-hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+  .tag-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #fff; border: 1px solid var(--line); border-radius: 999px;
+    padding: 5px 8px 5px 14px; font-size: 13px; font-weight: 600;
+  }
+  .tag-chip button {
+    border: none; background: #eef0f3; color: var(--muted); font-size: 12px;
+    width: 20px; height: 20px; border-radius: 50%; cursor: pointer; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .tag-chip button:hover { background: var(--work); color: var(--work-ink); }
 
   /* Checklist */
   .check-list { display: flex; flex-direction: column; gap: 10px; }
@@ -200,11 +220,18 @@
       <span class="purpose">Your channel's approved copy and notes — tap a note to reuse it</span>
     </div>
     <div class="library" id="library"></div>
-    <div class="reuse-box card" id="reuse-box">
-      <h3>Reused note</h3>
+    <div class="reuse-box card" id="reuse-box" hidden>
+      <div class="reuse-head">
+        <h3>Reused note</h3>
+        <div class="reuse-head-actions">
+          <button id="copy-all-btn" hidden>Copy all</button>
+          <button id="clear-reuse-btn">Clear</button>
+        </div>
+      </div>
       <input id="reuse-label" placeholder="Tap a note above to bring it here" readonly>
+      <div id="tag-chips" hidden></div>
       <textarea id="reuse-text" placeholder="The note's text will appear here — edit and copy it freely."></textarea>
-      <p class="reuse-hint">Tip: select the text above and copy it into your video description or post. Nothing is saved between visits.</p>
+      <p class="reuse-hint" id="reuse-hint">Tip: select the text above and copy it into your video description or post. Nothing is saved between visits.</p>
     </div>
   </section>
 
@@ -373,10 +400,94 @@
     const btn = e.target.closest("button[data-note]");
     if (!btn) return;
     const n = notes[+btn.dataset.note];
-    document.getElementById("reuse-label").value = n.kind + " · " + n.label;
-    document.getElementById("reuse-text").value = n.text;
+    activeNote = n;
+    renderReuse();
     document.getElementById("reuse-box").scrollIntoView({ behavior: "smooth", block: "center" });
     toast("Note loaded below — copy or edit it");
+  });
+
+  // ---- Reused note box: hashtag chips, copy all, clear ----
+  let activeNote = null;
+
+  function renderReuse() {
+    const box = document.getElementById("reuse-box");
+    const label = document.getElementById("reuse-label");
+    const textEl = document.getElementById("reuse-text");
+    const chipsEl = document.getElementById("tag-chips");
+    const copyBtn = document.getElementById("copy-all-btn");
+    const hint = document.getElementById("reuse-hint");
+
+    if (!activeNote) {
+      box.hidden = true;
+      chipsEl.hidden = true;
+      chipsEl.innerHTML = "";
+      copyBtn.hidden = true;
+      return;
+    }
+    box.hidden = false;
+    label.value = activeNote.kind + " · " + activeNote.label;
+
+    const isHashtagSet = activeNote.kind === "Hashtag set";
+    const tags = isHashtagSet
+      ? activeNote.text.split(/\s+/).map(t => t.trim()).filter(Boolean)
+      : [];
+
+    if (isHashtagSet && tags.length) {
+      textEl.hidden = true;
+      chipsEl.hidden = false;
+      copyBtn.hidden = false;
+      chipsEl.innerHTML = tags.map((t, i) => `
+        <span class="tag-chip">${escapeHtml(t)}<button data-tag="${i}" title="Remove ${escapeHtml(t)}">×</button></span>
+      `).join("");
+      hint.textContent = "Tap × to drop a tag, or Copy all to grab the full set. Nothing is saved between visits.";
+    } else {
+      textEl.hidden = false;
+      chipsEl.hidden = true;
+      copyBtn.hidden = true;
+      textEl.value = activeNote.text;
+      hint.textContent = "Tip: select the text above and copy it into your video description or post. Nothing is saved between visits.";
+    }
+  }
+
+  document.getElementById("tag-chips").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-tag]");
+    if (!btn || !activeNote) return;
+    const tags = activeNote.text.split(/\s+/).filter(Boolean);
+    tags.splice(+btn.dataset.tag, 1);
+    activeNote.text = tags.join(" ");
+    if (tags.length === 0) {
+      // keep the box visible with an empty state
+      document.getElementById("tag-chips").innerHTML =
+        '<span class="empty-note" style="padding:4px 0;">All tags removed — tap the note above to load it again.</span>';
+      toast("All tags removed");
+    } else {
+      renderReuse();
+      toast("Tag removed");
+    }
+  });
+
+  document.getElementById("copy-all-btn").addEventListener("click", async () => {
+    if (!activeNote) return;
+    const text = document.getElementById("reuse-label").value && !document.getElementById("tag-chips").hidden
+      ? activeNote.text
+      : "";
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Copied all tags to clipboard");
+    } catch {
+      // clipboard unavailable (e.g. non-secure context): select the text as a fallback
+      const ta = document.getElementById("reuse-text");
+      ta.hidden = false; ta.value = text; ta.select();
+      toast("Clipboard blocked — text selected, press Cmd+C");
+    }
+  });
+
+  document.getElementById("clear-reuse-btn").addEventListener("click", () => {
+    activeNote = null;
+    renderReuse();
+    document.getElementById("library").scrollIntoView({ behavior: "smooth", block: "center" });
+    toast("Reused note cleared");
   });
 
   // ---- Checklist (mirrors planner posts) ----
