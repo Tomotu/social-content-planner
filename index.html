@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Social Content Planner</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --ink: #1f2430;
+    --muted: #6b7280;
+    --line: #e5e8ee;
+    --accent: #3b6e5f;
+    --accent-soft: #e7f0ed;
+    --draft: #fef3c7; --draft-ink: #92610a;
+    --ready: #d1fae5; --ready-ink: #065f46;
+    --work: #fee2e2; --work-ink: #991b1b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
+  header.top { margin-bottom: 28px; }
+  header.top h1 { margin: 0 0 4px; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  header.top p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  section { margin-bottom: 40px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .section-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+  .section-head .purpose { color: var(--muted); font-size: 13px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+  }
+
+  /* Planner */
+  .add-form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .add-form input, .add-form select {
+    padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 14px; background: #fff; color: var(--ink);
+  }
+  .add-form input[name="title"] { flex: 1 1 220px; }
+  .add-form input[name="day"] { width: 120px; }
+  .add-form button {
+    padding: 9px 18px; border: none; border-radius: 8px; background: var(--accent);
+    color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .add-form button:hover { background: #325d50; }
+
+  .filters { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filters span { color: var(--muted); font-size: 13px; }
+  .filters button {
+    padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line);
+    background: #fff; font-size: 13px; cursor: pointer; color: var(--ink);
+  }
+  .filters button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+  .post-card .meta { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .day-chip {
+    font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent);
+    padding: 2px 10px; border-radius: 999px;
+  }
+  .platform-chip { font-size: 12px; color: var(--muted); }
+  .post-card h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+  .status-select {
+    font-size: 12px; padding: 5px 10px; border-radius: 999px; border: 1px solid transparent;
+    font-weight: 600; cursor: pointer;
+  }
+  .status-draft { background: var(--draft); color: var(--draft-ink); }
+  .status-ready { background: var(--ready); color: var(--ready-ink); }
+  .status-needswork { background: var(--work); color: var(--work-ink); }
+  .post-actions { margin-top: 10px; display: flex; gap: 8px; }
+  .post-actions button {
+    font-size: 12px; padding: 4px 10px; border-radius: 6px; cursor: pointer;
+    background: #fff; border: 1px solid var(--line); color: var(--ink);
+  }
+  .empty-note { color: var(--muted); font-size: 14px; padding: 16px; }
+
+  /* Brand library */
+  .library { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 14px; }
+  .note-card h3 { margin: 0 0 6px; font-size: 14px; font-weight: 700; }
+  .note-kind { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .note-body { font-size: 14px; color: var(--ink); white-space: pre-wrap; margin: 0 0 12px; }
+  .note-card button {
+    font-size: 13px; padding: 6px 14px; border-radius: 8px; cursor: pointer;
+    background: var(--accent-soft); color: var(--accent); border: none; font-weight: 600;
+  }
+  .reuse-box { margin-top: 16px; }
+  .reuse-box h3 { margin: 0 0 8px; font-size: 14px; font-weight: 700; }
+  .reuse-box textarea, .reuse-box input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    font-size: 14px; font-family: inherit; color: var(--ink); resize: vertical;
+  }
+  .reuse-box textarea { min-height: 90px; }
+  .reuse-hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+
+  /* Checklist */
+  .check-list { display: flex; flex-direction: column; gap: 10px; }
+  .check-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .check-row .title { flex: 1 1 200px; font-size: 14px; font-weight: 600; }
+  .check-row .sub { color: var(--muted); font-size: 12px; font-weight: 400; display: block; }
+  .check-row select { font-size: 12px; padding: 5px 10px; border-radius: 999px; border: 1px solid transparent; font-weight: 600; cursor: pointer; }
+  .check-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .dot-draft { background: #d97706; }
+  .dot-ready { background: #059669; }
+  .dot-needswork { background: #dc2626; }
+  .check-summary { color: var(--muted); font-size: 13px; margin-top: 12px; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 10px 20px; border-radius: 8px;
+    font-size: 14px; opacity: 0; pointer-events: none; transition: all .25s ease;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Social Content Planner</h1>
+    <p>Plan the week's posts, keep brand notes handy, and check what's ready to publish.</p>
+  </header>
+
+  <!-- 1. Weekly content planner -->
+  <section id="planner-section">
+    <div class="section-head">
+      <h2>Weekly Content Planner</h2>
+      <span class="purpose">Plan upcoming posts for the week</span>
+    </div>
+
+    <form class="add-form card" id="add-form">
+      <input name="day" list="day-options" placeholder="Day (e.g. Mon)" required>
+      <datalist id="day-options">
+        <option value="Mon"></option><option value="Tue"></option><option value="Wed"></option>
+        <option value="Thu"></option><option value="Fri"></option><option value="Sat"></option><option value="Sun"></option>
+      </datalist>
+      <select name="platform">
+        <option>Instagram</option><option>TikTok</option><option>Facebook</option>
+        <option>X (Twitter)</option><option>LinkedIn</option><option>YouTube Shorts</option>
+      </select>
+      <input name="title" placeholder="Post title or idea" required>
+      <select name="status">
+        <option value="draft">Draft</option>
+        <option value="ready">Ready</option>
+        <option value="needswork">Needs work</option>
+      </select>
+      <button type="submit">Add post</button>
+    </form>
+
+    <div class="filters">
+      <span>Filter by status:</span>
+      <button data-filter="all" class="active">All</button>
+      <button data-filter="draft">Draft</button>
+      <button data-filter="ready">Ready</button>
+      <button data-filter="needswork">Needs work</button>
+    </div>
+
+    <div class="posts" id="posts"></div>
+  </section>
+
+  <!-- 2. Brand library -->
+  <section>
+    <div class="section-head">
+      <h2>Brand Library</h2>
+      <span class="purpose">Approved copy and notes in one place — tap a note to reuse it</span>
+    </div>
+    <div class="library" id="library"></div>
+    <div class="reuse-box card" id="reuse-box">
+      <h3>Reused note</h3>
+      <input id="reuse-label" placeholder="Tap a note above to bring it here" readonly>
+      <textarea id="reuse-text" placeholder="The note's text will appear here — edit and copy it freely."></textarea>
+      <p class="reuse-hint">Tip: select the text above and copy it into your post. Nothing is saved between visits.</p>
+    </div>
+  </section>
+
+  <!-- 3. Post checklist -->
+  <section>
+    <div class="section-head">
+      <h2>Post Checklist</h2>
+      <span class="purpose">Quickly track what is ready to publish</span>
+    </div>
+    <div class="card check-list" id="checklist"></div>
+    <p class="check-summary" id="check-summary"></p>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  // ---- Sample data (Malaysia-specific, fictional) ----
+  let posts = [
+    { id: 1, day: "Mon", platform: "Instagram", title: "Teh tarik photo carousel — morning mamak stall vibes in Penang", status: "ready" },
+    { id: 2, day: "Wed", platform: "TikTok", title: "Short video: 3 weekend pasar malam snacks to try in KL", status: "draft" },
+    { id: 3, day: "Fri", platform: "Facebook", title: "Merdeka month throwback — behind the scenes of our first pop-up", status: "needswork" }
+  ];
+  let nextId = 4;
+
+  const notes = [
+    { kind: "Caption snippet", label: "Raya promo caption", text: "Selamat Hari Raya from all of us! 🌙 May your ketupat be soft and your duit raya generous. Drop by our stall this week for festive bundles — link in bio. #HariRaya #RayainMalaysia" },
+    { kind: "Hashtag set", label: "KL food content", text: "#KLfoodie #MalaysiaFoodie #PasarMalam #MakanKL #FoodieMalaysia #LocalEats" },
+    { kind: "Image note", label: "Product flat-lay style", text: "Shoot on light wooden table, morning window light from the left, add a batik cloth corner and a small potted plant for warmth. Keep props minimal — product is the hero." }
+  ];
+
+  const statusLabel = { draft: "Draft", ready: "Ready", needswork: "Needs work" };
+  const statusClass  = { draft: "status-draft", ready: "status-ready", needswork: "status-needswork" };
+
+  // ---- Toast ----
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._h);
+    t._h = setTimeout(() => t.classList.remove("show"), 2200);
+  }
+
+  // ---- Planner ----
+  let currentFilter = "all";
+
+  function renderPosts() {
+    const wrap = document.getElementById("posts");
+    const visible = posts.filter(p => currentFilter === "all" || p.status === currentFilter);
+    if (visible.length === 0) {
+      wrap.innerHTML = '<div class="card empty-note">No posts match this filter yet. Add one above or switch the filter.</div>';
+      return;
+    }
+    wrap.innerHTML = visible.map(p => `
+      <div class="card post-card">
+        <div class="meta">
+          <span class="day-chip">${escapeHtml(p.day)}</span>
+          <span class="platform-chip">${escapeHtml(p.platform)}</span>
+        </div>
+        <h3>${escapeHtml(p.title)}</h3>
+        <select class="status-select ${statusClass[p.status]}" data-id="${p.id}">
+          <option value="draft" ${p.status==="draft"?"selected":""}>Draft</option>
+          <option value="ready" ${p.status==="ready"?"selected":""}>Ready</option>
+          <option value="needswork" ${p.status==="needswork"?"selected":""}>Needs work</option>
+        </select>
+        <div class="post-actions">
+          <button class="edit-btn" data-id="${p.id}">Edit</button>
+          <button class="del-btn" data-id="${p.id}">Delete</button>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  document.getElementById("add-form").addEventListener("submit", e => {
+    e.preventDefault();
+    const f = e.target;
+    posts.push({
+      id: nextId++,
+      day: f.day.value.trim() || "—",
+      platform: f.platform.value,
+      title: f.title.value.trim(),
+      status: f.status.value
+    });
+    f.reset();
+    renderPosts();
+    renderChecklist();
+    toast("Post added to the planner");
+  });
+
+  document.querySelectorAll(".filters button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filters button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentFilter = btn.dataset.filter;
+      renderPosts();
+    });
+  });
+
+  document.getElementById("posts").addEventListener("change", e => {
+    if (e.target.classList.contains("status-select")) {
+      const post = posts.find(p => p.id === +e.target.dataset.id);
+      if (post) { post.status = e.target.value; renderPosts(); renderChecklist(); }
+    }
+  });
+
+  document.getElementById("posts").addEventListener("click", e => {
+    const id = +e.target.dataset.id;
+    if (e.target.classList.contains("del-btn")) {
+      posts = posts.filter(p => p.id !== id);
+      renderPosts(); renderChecklist();
+      toast("Post removed");
+    }
+    if (e.target.classList.contains("edit-btn")) {
+      const post = posts.find(p => p.id === id);
+      if (!post) return;
+      const newTitle = prompt("Edit post title:", post.title);
+      if (newTitle && newTitle.trim()) {
+        post.title = newTitle.trim();
+        renderPosts(); renderChecklist();
+        toast("Post updated");
+      }
+    }
+  });
+
+  // ---- Brand library ----
+  function renderLibrary() {
+    document.getElementById("library").innerHTML = notes.map((n, i) => `
+      <div class="card note-card">
+        <div class="note-kind">${escapeHtml(n.kind)}</div>
+        <h3>${escapeHtml(n.label)}</h3>
+        <p class="note-body">${escapeHtml(n.text)}</p>
+        <button data-note="${i}">Use this note</button>
+      </div>
+    `).join("");
+  }
+
+  document.getElementById("library").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-note]");
+    if (!btn) return;
+    const n = notes[+btn.dataset.note];
+    document.getElementById("reuse-label").value = n.kind + " · " + n.label;
+    document.getElementById("reuse-text").value = n.text;
+    document.getElementById("reuse-box").scrollIntoView({ behavior: "smooth", block: "center" });
+    toast("Note loaded below — copy or edit it");
+  });
+
+  // ---- Checklist (mirrors planner posts) ----
+  function renderChecklist() {
+    const wrap = document.getElementById("checklist");
+    if (posts.length === 0) {
+      wrap.innerHTML = '<div class="empty-note">No posts to check yet. Add one in the planner above.</div>';
+      document.getElementById("check-summary").textContent = "";
+      return;
+    }
+    wrap.innerHTML = posts.map(p => `
+      <div class="check-row" style="border-bottom:1px solid var(--line); padding-bottom:10px;">
+        <span class="check-dot dot-${p.status}"></span>
+        <div class="title">${escapeHtml(p.title)}
+          <span class="sub">${escapeHtml(p.day)} · ${escapeHtml(p.platform)}</span>
+        </div>
+        <select class="status-select ${statusClass[p.status]}" data-check="${p.id}">
+          <option value="draft" ${p.status==="draft"?"selected":""}>Draft</option>
+          <option value="ready" ${p.status==="ready"?"selected":""}>Ready</option>
+          <option value="needswork" ${p.status==="needswork"?"selected":""}>Needs work</option>
+        </select>
+      </div>
+    `).join("");
+    const ready = posts.filter(p => p.status === "ready").length;
+    document.getElementById("check-summary").textContent =
+      `${ready} of ${posts.length} post${posts.length === 1 ? "" : "s"} marked ready to publish.`;
+  }
+
+  document.getElementById("checklist").addEventListener("change", e => {
+    if (e.target.dataset.check) {
+      const post = posts.find(p => p.id === +e.target.dataset.check);
+      if (post) { post.status = e.target.value; renderPosts(); renderChecklist(); toast("Status updated"); }
+    }
+  });
+
+  // ---- Init: app never opens empty ----
+  renderPosts();
+  renderLibrary();
+  renderChecklist();
+</script>
+</body>
+</html>
