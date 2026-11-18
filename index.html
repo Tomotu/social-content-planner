@@ -44,14 +44,24 @@
   }
 
   /* Planner */
-  .add-form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+  .add-form { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; }
   .add-form input, .add-form select {
     padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px;
     font-size: 14px; background: #fff; color: var(--ink);
   }
   .add-form input[name="title"] { flex: 1 1 220px; }
-  .add-form input[name="day"] { width: 100px; }
-  .add-form input[name="deadline"] { width: 150px; }
+  .day-picker {
+    display: flex; align-items: center; gap: 5px; flex-wrap: wrap;
+    background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px;
+  }
+  .day-picker-label { font-size: 12px; color: var(--muted); margin-right: 2px; }
+  .day-pill {
+    padding: 4px 0; width: 42px; text-align: center; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--line); border-radius: 999px; background: #fff;
+    color: var(--ink); cursor: pointer;
+  }
+  .day-pill:hover { border-color: var(--accent); color: var(--accent); }
+  .day-pill.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
   .add-form button {
     padding: 9px 18px; border: none; border-radius: 8px; background: var(--accent);
     color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
@@ -146,11 +156,16 @@
     </div>
 
     <form class="add-form card" id="add-form">
-      <input name="day" list="day-options" placeholder="Day (e.g. Mon)" required>
-      <datalist id="day-options">
-        <option value="Mon"></option><option value="Tue"></option><option value="Wed"></option>
-        <option value="Thu"></option><option value="Fri"></option><option value="Sat"></option><option value="Sun"></option>
-      </datalist>
+      <div class="day-picker" aria-label="Publish day">
+        <span class="day-picker-label">Day</span>
+        <button type="button" class="day-pill" data-day="Mon">Mon</button>
+        <button type="button" class="day-pill" data-day="Tue">Tue</button>
+        <button type="button" class="day-pill" data-day="Wed">Wed</button>
+        <button type="button" class="day-pill" data-day="Thu">Thu</button>
+        <button type="button" class="day-pill" data-day="Fri">Fri</button>
+        <button type="button" class="day-pill" data-day="Sat">Sat</button>
+        <button type="button" class="day-pill" data-day="Sun">Sun</button>
+      </div>
       <select name="platform">
         <option>YouTube Shorts</option>
         <option>TikTok</option>
@@ -158,7 +173,7 @@
         <option>YouTube long-form</option>
       </select>
       <input name="title" placeholder="Review or video idea" required>
-      <input name="deadline" placeholder="Deadline (e.g. 5:00 PM)">
+      <input type="time" name="deadline" title="Delivery deadline (optional)">
       <select name="status">
         <option value="draft">Draft</option>
         <option value="ready">Ready</option>
@@ -268,18 +283,40 @@
     return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   }
 
+  // Day-of-week pill selection in the add form
+  document.querySelectorAll(".day-pill").forEach(pill => {
+    pill.addEventListener("click", () => {
+      document.querySelectorAll(".day-pill").forEach(p => p.classList.remove("selected"));
+      pill.classList.add("selected");
+    });
+  });
+
+  // "17:00" -> "5:00 PM" for display on cards
+  function formatDeadline(t) {
+    if (!t) return "";
+    const m = t.match(/^(\d{2}):(\d{2})$/);
+    if (!m) return t;
+    let h = +m[1];
+    const min = m[2];
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h}:${min} ${ampm}`;
+  }
+
   document.getElementById("add-form").addEventListener("submit", e => {
     e.preventDefault();
     const f = e.target;
+    const selectedDay = document.querySelector(".day-pill.selected");
     posts.push({
       id: nextId++,
-      day: f.day.value.trim() || "—",
+      day: selectedDay ? selectedDay.dataset.day : "—",
       platform: f.platform.value,
       title: f.title.value.trim(),
       status: f.status.value,
-      deadline: f.deadline.value.trim()
+      deadline: formatDeadline(f.deadline.value)
     });
     f.reset();
+    document.querySelectorAll(".day-pill").forEach(p => p.classList.remove("selected"));
     renderPosts();
     renderChecklist();
     toast("Post added to the planner");
