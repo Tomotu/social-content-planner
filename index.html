@@ -50,7 +50,8 @@
     font-size: 14px; background: #fff; color: var(--ink);
   }
   .add-form input[name="title"] { flex: 1 1 220px; }
-  .add-form input[name="day"] { width: 120px; }
+  .add-form input[name="day"] { width: 100px; }
+  .add-form input[name="deadline"] { width: 150px; }
   .add-form button {
     padding: 9px 18px; border: none; border-radius: 8px; background: var(--accent);
     color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
@@ -70,6 +71,10 @@
   .day-chip {
     font-size: 12px; font-weight: 600; background: var(--accent-soft); color: var(--accent);
     padding: 2px 10px; border-radius: 999px;
+  }
+  .deadline-chip {
+    font-size: 12px; font-weight: 600; color: #9a3412;
+    background: #ffedd5; padding: 2px 10px; border-radius: 999px;
   }
   .platform-chip { font-size: 12px; color: var(--muted); }
   .post-card h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
@@ -130,14 +135,14 @@
 <div class="wrap">
   <header class="top">
     <h1>Social Content Planner</h1>
-    <p>Plan the week's posts, keep brand notes handy, and check what's ready to publish.</p>
+    <p>Plan the week's reviews and videos, hit every delivery deadline, and keep your channel's go-to copy handy.</p>
   </header>
 
   <!-- 1. Weekly content planner -->
   <section id="planner-section">
     <div class="section-head">
       <h2>Weekly Content Planner</h2>
-      <span class="purpose">Plan upcoming posts for the week</span>
+      <span class="purpose">Plan upcoming reviews and videos for the week</span>
     </div>
 
     <form class="add-form card" id="add-form">
@@ -147,10 +152,11 @@
         <option value="Thu"></option><option value="Fri"></option><option value="Sat"></option><option value="Sun"></option>
       </datalist>
       <select name="platform">
-        <option>Instagram</option><option>TikTok</option><option>Facebook</option>
-        <option>X (Twitter)</option><option>LinkedIn</option><option>YouTube Shorts</option>
+        <option>YouTube</option><option>TikTok</option><option>Instagram</option>
+        <option>X (Twitter)</option><option>Facebook</option><option>Threads</option>
       </select>
-      <input name="title" placeholder="Post title or idea" required>
+      <input name="title" placeholder="Review or video idea" required>
+      <input name="deadline" placeholder="Deadline (e.g. 5:00 PM)">
       <select name="status">
         <option value="draft">Draft</option>
         <option value="ready">Ready</option>
@@ -174,22 +180,22 @@
   <section>
     <div class="section-head">
       <h2>Brand Library</h2>
-      <span class="purpose">Approved copy and notes in one place — tap a note to reuse it</span>
+      <span class="purpose">Your channel's approved copy and notes — tap a note to reuse it</span>
     </div>
     <div class="library" id="library"></div>
     <div class="reuse-box card" id="reuse-box">
       <h3>Reused note</h3>
       <input id="reuse-label" placeholder="Tap a note above to bring it here" readonly>
       <textarea id="reuse-text" placeholder="The note's text will appear here — edit and copy it freely."></textarea>
-      <p class="reuse-hint">Tip: select the text above and copy it into your post. Nothing is saved between visits.</p>
+      <p class="reuse-hint">Tip: select the text above and copy it into your video description or post. Nothing is saved between visits.</p>
     </div>
   </section>
 
   <!-- 3. Post checklist -->
   <section>
     <div class="section-head">
-      <h2>Post Checklist</h2>
-      <span class="purpose">Quickly track what is ready to publish</span>
+      <h2>Publishing Checklist</h2>
+      <span class="purpose">Track what is ready to deliver and publish</span>
     </div>
     <div class="card check-list" id="checklist"></div>
     <p class="check-summary" id="check-summary"></p>
@@ -199,18 +205,18 @@
 <div id="toast"></div>
 
 <script>
-  // ---- Sample data (Malaysia-specific, fictional) ----
+  // ---- Sample data (tech creator, fictional) ----
   let posts = [
-    { id: 1, day: "Mon", platform: "Instagram", title: "Teh tarik photo carousel — morning mamak stall vibes in Penang", status: "ready" },
-    { id: 2, day: "Wed", platform: "TikTok", title: "Short video: 3 weekend pasar malam snacks to try in KL", status: "draft" },
-    { id: 3, day: "Fri", platform: "Facebook", title: "Merdeka month throwback — behind the scenes of our first pop-up", status: "needswork" }
+    { id: 1, day: "Mon", platform: "YouTube", title: "Full review: budget wireless earbuds under RM200 — sound test + battery benchmark", status: "ready", deadline: "5:00 PM" },
+    { id: 2, day: "Wed", platform: "TikTok", title: "Short: 3 hidden settings on the new mid-range Android phones", status: "draft", deadline: "12:00 PM" },
+    { id: 3, day: "Fri", platform: "Instagram", title: "Comparison carousel: mechanical vs membrane keyboards for WFH setups", status: "needswork", deadline: "3:00 PM" }
   ];
   let nextId = 4;
 
   const notes = [
-    { kind: "Caption snippet", label: "Raya promo caption", text: "Selamat Hari Raya from all of us! 🌙 May your ketupat be soft and your duit raya generous. Drop by our stall this week for festive bundles — link in bio. #HariRaya #RayainMalaysia" },
-    { kind: "Hashtag set", label: "KL food content", text: "#KLfoodie #MalaysiaFoodie #PasarMalam #MakanKL #FoodieMalaysia #LocalEats" },
-    { kind: "Image note", label: "Product flat-lay style", text: "Shoot on light wooden table, morning window light from the left, add a batik cloth corner and a small potted plant for warmth. Keep props minimal — product is the hero." }
+    { kind: "Caption snippet", label: "Review disclosure intro", text: "Quick heads-up: we bought this unit with our own money — no sponsorship, no loaner, no bias. Full test results and benchmark numbers in the video. What should we review next? Drop it in the comments. #TechReview" },
+    { kind: "Hashtag set", label: "Gadget review tags", text: "#TechReview #GadgetReview #TechMalaysia #Unboxing #GearTest #TechTok #TechReviewMY" },
+    { kind: "Image note", label: "Desk setup B-roll style", text: "Film B-roll at desk height, key light at 45° from the left, RGB keyboard on but dimmed to avoid blowing out the sensor. Wipe the desk and monitor with a microfiber cloth before every take — dust shows up in 4K." }
   ];
 
   const statusLabel = { draft: "Draft", ready: "Ready", needswork: "Needs work" };
@@ -239,6 +245,7 @@
       <div class="card post-card">
         <div class="meta">
           <span class="day-chip">${escapeHtml(p.day)}</span>
+          ${p.deadline ? `<span class="deadline-chip">Due ${escapeHtml(p.deadline)}</span>` : ""}
           <span class="platform-chip">${escapeHtml(p.platform)}</span>
         </div>
         <h3>${escapeHtml(p.title)}</h3>
@@ -267,7 +274,8 @@
       day: f.day.value.trim() || "—",
       platform: f.platform.value,
       title: f.title.value.trim(),
-      status: f.status.value
+      status: f.status.value,
+      deadline: f.deadline.value.trim()
     });
     f.reset();
     renderPosts();
@@ -344,7 +352,7 @@
       <div class="check-row" style="border-bottom:1px solid var(--line); padding-bottom:10px;">
         <span class="check-dot dot-${p.status}"></span>
         <div class="title">${escapeHtml(p.title)}
-          <span class="sub">${escapeHtml(p.day)} · ${escapeHtml(p.platform)}</span>
+          <span class="sub">${escapeHtml(p.day)} · ${escapeHtml(p.platform)}${p.deadline ? " · Due " + escapeHtml(p.deadline) : ""}</span>
         </div>
         <select class="status-select ${statusClass[p.status]}" data-check="${p.id}">
           <option value="draft" ${p.status==="draft"?"selected":""}>Draft</option>
@@ -355,7 +363,7 @@
     `).join("");
     const ready = posts.filter(p => p.status === "ready").length;
     document.getElementById("check-summary").textContent =
-      `${ready} of ${posts.length} post${posts.length === 1 ? "" : "s"} marked ready to publish.`;
+      `${ready} of ${posts.length} post${posts.length === 1 ? "" : "s"} ready to deliver.`;
   }
 
   document.getElementById("checklist").addEventListener("change", e => {
